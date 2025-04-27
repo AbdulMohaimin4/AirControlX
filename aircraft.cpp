@@ -1,25 +1,22 @@
-// Aircraft.cpp
-
 #include "aircraft.hpp"
 #include <cstdlib>
 #include <iostream>
+#include "simulationTimer.hpp"
+#include <iomanip>
+#include <ctime>
 
 Aircraft::Aircraft(std::string ID, Airline* al)
     : id(ID), airline(al), phase(AircraftPhase::AtGate), speed(0.0), hasFault(false), avnIssued(false), violationCount(0), faultType("") {}
 
 void Aircraft::updatePhase(AircraftPhase newPhase) {
-
     phase = newPhase;
     assignSpeed();
     checkForViolation();
 }
 
 void Aircraft::assignSpeed() {
-
     int roll = rand() % 100;
-
     switch (phase) {
-
         case AircraftPhase::Holding:
             speed = (roll < 90) ? 400 + rand() % 201 : 601 + rand() % 50;
             break;
@@ -48,7 +45,6 @@ void Aircraft::assignSpeed() {
 }
 
 void Aircraft::checkForViolation() {
-
     switch (phase) {
         case AircraftPhase::Holding: if (speed > 600) triggerAVN("Speed exceeds 600 (too fast in holding)"); break;
         case AircraftPhase::Approach: if (speed < 240 || speed > 290) triggerAVN("Approach speed out of range (240–290)"); break;
@@ -62,20 +58,29 @@ void Aircraft::checkForViolation() {
 }
 
 void Aircraft::triggerAVN(std::string reason) {
+    SimulationTimer timer;
+    // Format times for logging
+    auto realTimeSec = timer.getRealTimeElapsed().count();
+    int realMin = realTimeSec / 60;
+    int realSec = realTimeSec % 60;
+    auto simTime = timer.getSimulatedTime();
+    time_t simTime_t = std::chrono::system_clock::to_time_t(simTime);
+    tm* sim_tm = localtime(&simTime_t);
+    std::ostringstream oss;
+    oss << std::setfill('0') << std::setw(2) << realMin << ":" << std::setw(2) << realSec
+        << " | Sim: " << std::setw(2) << sim_tm->tm_hour << ":" << std::setw(2) << sim_tm->tm_min << ":" << std::setw(2) << sim_tm->tm_sec;
 
-    const std::string violation = "[AVN] Violation: " + id + " | Phase: " + toString(phase) + " | Speed: " + std::to_string(speed) + " km/h | Reason: " + reason + "\n";
+    const std::string violation = "[AVN] Violation: " + id + " | Phase: " + toString(phase) + " | Speed: " + std::to_string(speed) + " km/h | Reason: " + reason + " | Time: " + oss.str() + "\n";
     this->airline->logViolation(violation);
-    AVNLog::issueAVN(id, reason, speed, phase);
+    AVNLog::issueAVN(id, reason, speed, phase, oss.str());
     avnIssued = true;
     violationCount++;
 }
 
 void Aircraft::checkGroundFault() {
-
     if ((phase == AircraftPhase::AtGate || phase == AircraftPhase::Taxi) && (rand() % 100 < 15)) {
-
         hasFault = true;
-        faultType = (rand() % 2 == 0) ? "Brake Faliure" : "Hydraulic Leak";
+        faultType = (rand() % 2 == 0) ? "Brake Failure" : "Hydraulic Leak";
         std::cout << "[FAULT] " << id << " encountered: " << faultType << "\n";
     }
 }
