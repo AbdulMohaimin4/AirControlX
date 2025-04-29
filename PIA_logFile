@@ -10,3 +10,5 @@
 
 [AVN] Violation: PK002 | Phase: Taxi | Speed: 53.000000 km/h | Reason: Taxi speed exceeds 30 | Time: 00:00 | Sim: 00:00:00
 
+[AVN] Violation: PK002 | Phase: Landing | Speed: 25.000000 km/h | Reason: Landing speed not decelerated properly | Time: 00:00 | Sim: 00:00:00
+

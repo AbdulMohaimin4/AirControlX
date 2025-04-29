@@ -7,4 +7,5 @@
 std::string toString(FlightType type);
 std::string toString(AircraftPhase phase);
 
+
 #endif

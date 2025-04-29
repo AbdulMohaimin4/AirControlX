@@ -26,12 +26,13 @@ public:
 
     Aircraft(std::string ID, Airline* al);
 
-    void checkRunway(Runway* runway); // locks/unlocks/waits for runway mutex
+    void checkRunway(RunwayInfo* runway); // locks/unlocks/waits for runway mutex
     void updatePhase(AircraftPhase newPhase);
     void assignSpeed();
     void checkForViolation();
     void triggerAVN(std::string reason);
     void checkGroundFault();
 };
+
 
 #endif

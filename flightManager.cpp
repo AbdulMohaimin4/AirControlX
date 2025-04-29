@@ -2,7 +2,6 @@
 #include "simulationTimer.hpp"
 #include <iostream>
 #include <thread>
-#include <chrono>
 #include <algorithm>
 #include <iomanip>
 #include <ctime>
@@ -43,7 +42,7 @@ void FlightManager::simulate(std::vector<FlightSchedule>& schedules, Runway& rwy
 
 
         Runway* rw = nullptr; // points to already instantiated Runway objects in main
-        
+
         // choosing runway based on whether flight is arrival/departure
         if (schedule.isArrival) {
 
@@ -54,8 +53,16 @@ void FlightManager::simulate(std::vector<FlightSchedule>& schedules, Runway& rwy
 
             cout << "[TIME] Real: " << oss.str() << "\n";
 
-            schedule.aircraft->checkRunway(rw); // waiting for runway to be free
+            // using runway info struct to pass info into thread func
+            RunwayInfo* info = new RunwayInfo;
+            info->isArrival = schedule.isArrival;
+            info->priority = schedule.aircraft->airline->priority;
+            info->runway = rw;
+            info->runway_C = &rwyC; // incase high priority and A/B are locked
+
+            schedule.aircraft->checkRunway(info); // waiting for runway to be free
             simulateArrival(schedule.aircraft, rw); // assignment of runway
+            pthread_join(schedule.aircraft->aircraft_thread, NULL); // joining thread after done
 
             cout << "[TIME] Real: " << oss.str() << "\n";
 
@@ -68,8 +75,16 @@ void FlightManager::simulate(std::vector<FlightSchedule>& schedules, Runway& rwy
 
             cout << "[TIME] Real: " << oss.str() << "\n";
 
-            schedule.aircraft->checkRunway(rw); // waiting for runway to be free
+            // using runway info struct to pass info into thread func
+            RunwayInfo* info = new RunwayInfo;
+            info->isArrival = schedule.isArrival;
+            info->priority = schedule.aircraft->airline->priority;
+            info->runway = rw;
+            info->runway_C = &rwyC; // incase high priority and A/B are locked
+
+            schedule.aircraft->checkRunway(info); // waiting for runway to be free
             simulateDeparture(schedule.aircraft, rw); // assignment of runway
+            pthread_join(schedule.aircraft->aircraft_thread, NULL); // joining thread after done
 
             cout << "[TIME] Real: " << oss.str() << "\n";
 
