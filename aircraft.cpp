@@ -6,17 +6,22 @@
 #include <ctime>
 
 Aircraft::Aircraft(std::string ID, Airline* al)
-    : id(ID), airline(al), phase(AircraftPhase::AtGate), speed(0.0), hasFault(false), avnIssued(false), violationCount(0), faultType("") {}
+    : id(ID), airline(al), phase(AircraftPhase::AtGate), speed(0.0), hasFault(false), avnIssued(false), violationCount(0), faultType(""), isDone(0) {}
 
 void Aircraft::updatePhase(AircraftPhase newPhase) {
+
     phase = newPhase;
-    assignSpeed();
-    checkForViolation();
+    this->assignSpeed();
+    this->checkForViolation();
 }
 
 void Aircraft::assignSpeed() {
+
     int roll = rand() % 100;
-    switch (phase) {
+
+    // 10% chance of violation set in each phase
+    switch (phase) { 
+
         case AircraftPhase::Holding:
             speed = (roll < 90) ? 400 + rand() % 201 : 601 + rand() % 50;
             break;
@@ -45,7 +50,9 @@ void Aircraft::assignSpeed() {
 }
 
 void Aircraft::checkForViolation() {
+
     switch (phase) {
+
         case AircraftPhase::Holding: if (speed > 600) triggerAVN("Speed exceeds 600 (too fast in holding)"); break;
         case AircraftPhase::Approach: if (speed < 240 || speed > 290) triggerAVN("Approach speed out of range (240–290)"); break;
         case AircraftPhase::Landing: if (speed > 240 || speed < 30) triggerAVN("Landing speed not decelerated properly"); break;
@@ -58,15 +65,18 @@ void Aircraft::checkForViolation() {
 }
 
 void Aircraft::triggerAVN(std::string reason) {
+
     SimulationTimer timer;
-    // Format times for logging
+
+    // Formatting times for logging
     auto realTimeSec = timer.getRealTimeElapsed().count();
     int realMin = realTimeSec / 60;
     int realSec = realTimeSec % 60;
     auto simTime = timer.getSimulatedTime();
     time_t simTime_t = std::chrono::system_clock::to_time_t(simTime);
     tm* sim_tm = localtime(&simTime_t);
-    std::ostringstream oss;
+
+    std::ostringstream oss; // to store time information for logging
     oss << std::setfill('0') << std::setw(2) << realMin << ":" << std::setw(2) << realSec
         << " | Sim: " << std::setw(2) << sim_tm->tm_hour << ":" << std::setw(2) << sim_tm->tm_min << ":" << std::setw(2) << sim_tm->tm_sec;
 
@@ -78,7 +88,9 @@ void Aircraft::triggerAVN(std::string reason) {
 }
 
 void Aircraft::checkGroundFault() {
+
     if ((phase == AircraftPhase::AtGate || phase == AircraftPhase::Taxi) && (rand() % 100 < 15)) {
+
         hasFault = true;
         faultType = (rand() % 2 == 0) ? "Brake Failure" : "Hydraulic Leak";
         std::cout << "[FAULT] " << id << " encountered: " << faultType << "\n";

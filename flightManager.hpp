@@ -7,12 +7,14 @@
 #include "runway.hpp"
 
 struct FlightSchedule {
+
     Aircraft* aircraft;
     bool isArrival;
     std::chrono::system_clock::time_point scheduledTime;
 };
 
 class FlightManager {
+
 public:
     void simulate(std::vector<FlightSchedule>& schedules, Runway& rwyA, Runway& rwyB, Runway& rwyC);
     void simulateArrival(Aircraft* ac, Runway* rw);

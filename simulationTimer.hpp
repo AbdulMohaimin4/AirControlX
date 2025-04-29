@@ -4,6 +4,7 @@
 #include <chrono>
 
 class SimulationTimer {
+    
 private:
     std::chrono::system_clock::time_point startTime;
     std::chrono::system_clock::time_point simStartTime;

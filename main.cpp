@@ -10,13 +10,11 @@
 #include "flightManager.hpp"
 using namespace std;
 
-// Structure to hold flight selection and schedule
-
 int main() {
 
     srand(time(0));
 
-    // Initialize airlines
+    // Initializing airlines
     Airline PIA("PIA", FlightType::Commercial, 6, 4);
     Airline AirBlue("AirBlue", FlightType::Commercial, 4, 4);
     Airline FedEx("FedEx", FlightType::Cargo, 3, 2);
@@ -24,13 +22,14 @@ int main() {
     Airline BlueDart("BlueDart", FlightType::Cargo, 2, 2);
     Airline AghaKhan_Air_Ambulance("AghaKhan_Air_Ambulance", FlightType::Medical, 2, 1);
 
-    // Initialize runways
+    // Initializing runways
     Runway rwyA(RunwayID::RWY_A, Direction::North);
     Runway rwyB(RunwayID::RWY_B, Direction::East);
     Runway rwyC(RunwayID::RWY_C, Direction::None);
 
-    // Instantiate all available aircraft
+    // Initializing all available aircrafts at the start
     vector<Aircraft*> availableAircrafts = {
+
         new Aircraft("PK001", &PIA),
         new Aircraft("PK002", &PIA),
         new Aircraft("PK003", &PIA),
@@ -47,12 +46,18 @@ int main() {
         new Aircraft("AKA01", &AghaKhan_Air_Ambulance)
     };
 
+
+
+
     FlightManager manager;
     vector<FlightSchedule> schedules;
 
+
+
     // User input for flight schedules
     cout << "\nAvailable Aircrafts:\n";
-    for (size_t i = 0; i < availableAircrafts.size(); ++i) {
+    for (int i = 0; i < availableAircrafts.size(); ++i) {
+
         cout << i + 1 << ". " << availableAircrafts[i]->id << " (" << availableAircrafts[i]->airline->name << ")\n";
     }
 
@@ -61,30 +66,38 @@ int main() {
     cin >> numFlights;
 
     if (numFlights < 0 || numFlights > availableAircrafts.size()) {
+
         cout << "Error: Invalid number of flights. Must be between 0 and " << availableAircrafts.size() << ".\n";
         return 1;
     }
 
+    // loop for user input of aircraft selection
     for (int i = 0; i < numFlights; ++i) {
+
         int aircraftIndex;
         cout << "\nSelect aircraft for flight " << i + 1 << " (1-" << availableAircrafts.size() << "): ";
         cin >> aircraftIndex;
 
         if (aircraftIndex < 1 || aircraftIndex > availableAircrafts.size()) {
+
             cout << "Error: Invalid aircraft selection.\n";
             --i;
             continue;
         }
 
-        // Check if aircraft is already scheduled
+        // check if aircraft is already scheduled
         bool isScheduled = false;
         for (const auto& schedule : schedules) {
+
             if (schedule.aircraft == availableAircrafts[aircraftIndex - 1]) {
+
                 isScheduled = true;
                 break;
             }
         }
+
         if (isScheduled) {
+
             cout << "Error: Aircraft already scheduled.\n";
             --i;
             continue;
@@ -94,21 +107,22 @@ int main() {
         cout << "Is this an arrival (1) or departure (0)? ";
         int input;
         cin >> input;
-        isArrival = (input == 1);
+        isArrival = (input == 1); // to make sure 1 or 0 (error handling)
 
         string timeInput;
         cout << "Enter scheduled time (HH:MM, 24-hour format, e.g., 14:30): ";
         cin >> timeInput;
 
-        // Parse time input
+        // Parsing time input and handling error using 'sscanf'
         int hours, minutes;
         if (sscanf(timeInput.c_str(), "%d:%d", &hours, &minutes) != 2 || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+
             cout << "Error: Invalid time format. Use HH:MM (24-hour).\n";
             --i;
             continue;
         }
 
-        // Create a time_point for scheduled time (assume today's date)
+        // Creating a time_point for scheduled time (assuming today's date) beyond my understanding
         auto now = chrono::system_clock::now();
         time_t now_c = chrono::system_clock::to_time_t(now);
         tm local_tm = *localtime(&now_c);
@@ -117,17 +131,21 @@ int main() {
         local_tm.tm_sec = 0;
         auto scheduledTime = chrono::system_clock::from_time_t(mktime(&local_tm));
 
-        schedules.push_back({availableAircrafts[aircraftIndex - 1], isArrival, scheduledTime});
+        schedules.push_back({availableAircrafts[aircraftIndex - 1], isArrival, scheduledTime}); // pushing aircraft into schedule vector
     }
 
     cout << "\n\n\t\t*** Simulation Initializing ***\n\n";
+
     manager.simulate(schedules, rwyA, rwyB, rwyC);
 
-    // Clean up
+    // Freeing memory
     for (auto aircraft : availableAircrafts) {
+
         delete aircraft;
     }
 
     cout << "\n\n\t\t*** Simulation Complete ***\n";
+
+
     return 0;
 }

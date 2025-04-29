@@ -1,83 +1,70 @@
 #include <SFML/Graphics.hpp>
-#include <vector>
-#include <string>
+#include <sstream>
+#include <iomanip>
 
-int main()
-{
-    sf::RenderWindow window(sf::VideoMode(800, 600), "SFML Drop-Down Example");
+std::string formatTime(int totalSeconds) {
+    int minutes = totalSeconds / 60;
+    int seconds = totalSeconds % 60;
 
-    // Font for the text
+    std::ostringstream oss;
+    oss << std::setw(2) << std::setfill('0') << minutes << ":"
+        << std::setw(2) << std::setfill('0') << seconds;
+    return oss.str();
+}
+
+int main() {
+    sf::RenderWindow window(sf::VideoMode(400, 200), "Countdown Timer");
+    window.setFramerateLimit(60);
+
+    // Font
     sf::Font font;
-    if (!font.loadFromFile("tahoma.ttf")) {
-        return -1; // Load a font from your project folder
+    if (!font.loadFromFile("fonts/tahoma.ttf")) {
+        return -1; // Ensure you have arial.ttf or replace with another font file path
     }
 
-    // Drop-down main box
-    sf::RectangleShape dropdownBox(sf::Vector2f(200.f, 40.f));
-    dropdownBox.setPosition(300.f, 100.f);
-    dropdownBox.setFillColor(sf::Color(200, 200, 200));
+    // Timer box
+    sf::RectangleShape timerBox(sf::Vector2f(200, 80));
+    timerBox.setFillColor(sf::Color(30, 30, 30));
+    timerBox.setOutlineColor(sf::Color::White);
+    timerBox.setOutlineThickness(3);
+    timerBox.setPosition(100, 60);
 
-    // Placeholder text
-    sf::Text selectedText("Select Option", font, 20);
-    selectedText.setPosition(dropdownBox.getPosition().x + 10, dropdownBox.getPosition().y + 5);
-    selectedText.setFillColor(sf::Color::Black);
+    // Timer text
+    sf::Text timerText;
+    timerText.setFont(font);
+    timerText.setCharacterSize(36);
+    timerText.setFillColor(sf::Color::White);
+    timerText.setPosition(140, 75);
 
-    // Options
-    std::vector<std::string> options = { "Option 1", "Option 2", "Option 3" };
-    std::vector<sf::Text> optionTexts;
-    for (size_t i = 0; i < options.size(); ++i) {
-        sf::Text text(options[i], font, 20);
-        text.setPosition(dropdownBox.getPosition().x + 10, dropdownBox.getPosition().y + 45 + i * 35);
-        text.setFillColor(sf::Color::Black);
-        optionTexts.push_back(text);
-    }
+    // Timer logic
+    const int startingTime = 5 * 60; // 5 minutes in seconds
+    int timeRemaining = startingTime;
+    sf::Clock clock;
 
-    bool isExpanded = false;
-
-    while (window.isOpen())
-    {
+    while (window.isOpen()) {
         sf::Event event;
-        while (window.pollEvent(event))
-        {
+        while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed)
                 window.close();
+        }
 
-            if (event.type == sf::Event::MouseButtonPressed) {
-                sf::Vector2f mousePos(event.mouseButton.x, event.mouseButton.y);
-
-                // Clicked on dropdown main box
-                if (dropdownBox.getGlobalBounds().contains(mousePos)) {
-                    isExpanded = !isExpanded;
-                }
-                // Clicked on an option
-                else if (isExpanded) {
-                    for (size_t i = 0; i < optionTexts.size(); ++i) {
-                        if (optionTexts[i].getGlobalBounds().contains(mousePos)) {
-                            selectedText.setString(options[i]);
-                            isExpanded = false;
-                        }
-                    }
-                }
+        // Update timer
+        if (timeRemaining > 0) {
+            sf::Time elapsed = clock.getElapsedTime();
+            if (elapsed.asSeconds() >= 1.0f) {
+                timeRemaining -= static_cast<int>(elapsed.asSeconds());
+                if (timeRemaining < 0) timeRemaining = 0;
+                clock.restart();
             }
         }
 
-        window.clear(sf::Color::White);
-        
-        window.draw(dropdownBox);
-        window.draw(selectedText);
+        // Update textS
+        timerText.setString(formatTime(timeRemaining));
 
-        if (isExpanded) {
-            for (const auto& text : optionTexts) {
-                // Draw background rectangles behind each option (optional)
-                sf::RectangleShape optionBg(sf::Vector2f(200.f, 30.f));
-                optionBg.setPosition(text.getPosition().x - 10, text.getPosition().y - 5);
-                optionBg.setFillColor(sf::Color(220, 220, 220));
-                window.draw(optionBg);
-
-                window.draw(text);
-            }
-        }
-
+        // Render
+        window.clear(sf::Color::Black);
+        window.draw(timerBox);
+        window.draw(timerText);
         window.display();
     }
 

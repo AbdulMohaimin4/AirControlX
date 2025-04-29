@@ -1,3 +1,8 @@
 Add later:
     - emergency probability (module 1) 
     - adjusting variables in private/public
+    - modify time it takes for phases based on SFML animations
+    - animate flight directions based on domestic vs international etc. (module 1)
+
+
+ignore real time simulation for now

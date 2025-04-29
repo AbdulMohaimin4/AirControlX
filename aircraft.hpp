@@ -6,18 +6,20 @@
 #include "utils.hpp"
 #include "airline.hpp"
 #include "AVNLog.hpp"
+using namespace std;
 
 class Aircraft {
     
 public:
-    std::string id;
+    string id;
     Airline* airline;
     AircraftPhase phase;
     double speed;
     bool hasFault;
     bool avnIssued;
     int violationCount;
-    std::string faultType;
+    string faultType;
+    bool isDone; // sucessfully at gate/cruise
 
     Aircraft(std::string ID, Airline* al);
 

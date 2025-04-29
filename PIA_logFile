@@ -1,0 +1,6 @@
+[AVN] Violation: PK003 | Phase: Climb | Speed: 467.000000 km/h | Reason: Climb speed exceeds 463 (max under 10,000 ft) | Time: 00:00 | Sim: 00:00:00
+
+[AVN] Violation: PK001 | Phase: Landing | Speed: 25.000000 km/h | Reason: Landing speed not decelerated properly | Time: 00:00 | Sim: 00:00:00
+
+[AVN] Violation: PK001 | Phase: At Gate | Speed: 13.000000 km/h | Reason: Gate speed exceeds 10 (should be stationary) | Time: 00:00 | Sim: 00:00:00
+
