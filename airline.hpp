@@ -14,6 +14,7 @@ private:
 public:
     std::string name;
     FlightType type;
+    int priority; // higher priority = higher value (for max-heap implementation)
     int aircraftCount;
     int activeFlights;
 

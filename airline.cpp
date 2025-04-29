@@ -12,6 +12,22 @@ Airline::Airline(std::string n, FlightType t, int total, int active)
         if (!this->logFile.is_open()) 
             std::cout << "Error: could not create/open file '" << this->fileName << "'\n";
 
+        switch (this->type) {
+
+            case FlightType::Cargo:
+                this->priority = 2;
+                break;
+            case FlightType::Commercial:
+                this->priority = 1;
+                break;
+            case FlightType::Medical:
+                this->priority = 4;     // priority = 4 is maximum (emergency) and can be set for other flights allowing usage of RWY-C
+                break;
+            case FlightType::Military:
+                this->priority = 3;
+                break;
+        }
+
     }
 
 Airline::~Airline() {

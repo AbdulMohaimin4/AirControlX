@@ -2,16 +2,19 @@
 #define AIRCRAFT_HPP
 
 #include <string>
+#include <pthread.h>
 #include "enums.hpp"
 #include "utils.hpp"
 #include "airline.hpp"
 #include "AVNLog.hpp"
+#include "runway.hpp"
 using namespace std;
 
 class Aircraft {
     
 public:
     string id;
+    pthread_t aircraft_thread; // aircraft's personal thread
     Airline* airline;
     AircraftPhase phase;
     double speed;
@@ -23,6 +26,7 @@ public:
 
     Aircraft(std::string ID, Airline* al);
 
+    void checkRunway(Runway* runway); // locks/unlocks/waits for runway mutex
     void updatePhase(AircraftPhase newPhase);
     void assignSpeed();
     void checkForViolation();

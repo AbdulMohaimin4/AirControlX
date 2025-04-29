@@ -1,12 +1,46 @@
 #include "aircraft.hpp"
+#include "runway.hpp"
 #include <cstdlib>
 #include <iostream>
 #include "simulationTimer.hpp"
 #include <iomanip>
+#include <chrono>
+#include <thread>
 #include <ctime>
 
 Aircraft::Aircraft(std::string ID, Airline* al)
     : id(ID), airline(al), phase(AircraftPhase::AtGate), speed(0.0), hasFault(false), avnIssued(false), violationCount(0), faultType(""), isDone(0) {}
+
+
+// thread function allowing aircraft to lock/unlock runways
+// static as implicit this* pointer isn't allowed in thread_fun
+static void* thread_fun(void* arg) {
+
+    Runway* runway = (Runway*)arg;
+
+    cout << runway->getID() << "...\n";
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+
+    pthread_mutex_lock(&runway->runway_mutex);
+
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+
+    pthread_mutex_unlock(&runway->runway_mutex);
+    runway->getID() == "RWY-B" ? 
+    cout << "\nAircraft cleared to depart\n" :
+    runway->getID() == "RWY-A" ? 
+        cout << "\nAircraft cleared to land\n" : 
+        cout << "\nRunway C clear to proceed\n";
+
+    pthread_exit(NULL);
+}
+
+// called in FlightManager to wait until runway is unoccupied
+void Aircraft::checkRunway(Runway* runway) {
+
+    cout << "\n\n" <<this->airline->name << " flight "<< this->id << " requesting runway ";
+    pthread_create(&this->aircraft_thread, NULL, thread_fun, (void*)runway);
+}
 
 void Aircraft::updatePhase(AircraftPhase newPhase) {
 

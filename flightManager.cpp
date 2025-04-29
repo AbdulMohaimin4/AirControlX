@@ -37,9 +37,9 @@ void FlightManager::simulate(std::vector<FlightSchedule>& schedules, Runway& rwy
         time_t simTime_t = std::chrono::system_clock::to_time_t(simTime);
         tm* sim_tm = localtime(&simTime_t);
 
-        std::ostringstream oss;
-        oss << std::setfill('0') << std::setw(2) << realMin << ":" << std::setw(2) << realSec
-            << " | Sim: " << std::setw(2) << sim_tm->tm_hour << ":" << std::setw(2) << sim_tm->tm_min << ":" << std::setw(2) << sim_tm->tm_sec;
+        ostringstream oss;
+        oss << setfill('0') << setw(2) << realMin << ":" << setw(2) << realSec
+            << " | Sim: " << setw(2) << sim_tm->tm_hour << ":" << setw(2) << sim_tm->tm_min << ":" << setw(2) << sim_tm->tm_sec;
 
 
         Runway* rw = nullptr; // points to already instantiated Runway objects in main
@@ -47,15 +47,32 @@ void FlightManager::simulate(std::vector<FlightSchedule>& schedules, Runway& rwy
         // choosing runway based on whether flight is arrival/departure
         if (schedule.isArrival) {
 
-            rw = (schedule.aircraft->airline->type == FlightType::Commercial) ? &rwyA : &rwyC;
-            std::cout << "[TIME] Real: " << oss.str() << "\n";
-            simulateArrival(schedule.aircraft, rw);
+            // by default RWY-C only accomodates Cargo flights (can be used as backup for multiple high-priority arrivals/departures)
+            rw = (schedule.aircraft->airline->type == FlightType::Commercial || 
+                schedule.aircraft->airline->type == FlightType::Medical ||
+                schedule.aircraft->airline->type == FlightType::Military) ? &rwyA : &rwyC;
+
+            cout << "[TIME] Real: " << oss.str() << "\n";
+
+            schedule.aircraft->checkRunway(rw); // waiting for runway to be free
+            simulateArrival(schedule.aircraft, rw); // assignment of runway
+
+            cout << "[TIME] Real: " << oss.str() << "\n";
+
         } 
         else {
 
-            rw = (schedule.aircraft->airline->type == FlightType::Commercial) ? &rwyB : &rwyC;
-            std::cout << "[TIME] Real: " << oss.str() << "\n";
-            simulateDeparture(schedule.aircraft, rw);
+            rw = (schedule.aircraft->airline->type == FlightType::Commercial || 
+                schedule.aircraft->airline->type == FlightType::Medical ||
+                schedule.aircraft->airline->type == FlightType::Military) ? &rwyB : &rwyC;
+
+            cout << "[TIME] Real: " << oss.str() << "\n";
+
+            schedule.aircraft->checkRunway(rw); // waiting for runway to be free
+            simulateDeparture(schedule.aircraft, rw); // assignment of runway
+
+            cout << "[TIME] Real: " << oss.str() << "\n";
+
         }
     }
 
@@ -77,7 +94,7 @@ void FlightManager::simulate(std::vector<FlightSchedule>& schedules, Runway& rwy
 void FlightManager::simulateArrival(Aircraft* ac, Runway* rw) {
 
     SimulationTimer timer; // For time output in events
-    std::cout << "\n[SIMULATION] Flight " << ac->id << " is ARRIVING.\n";
+    cout << "\n[SIMULATION] Flight " << ac->id << " is ARRIVING.\n";
 
     // sleeping to simulate real time delay (edit later to match animation delay for each phase)
     ac->updatePhase(AircraftPhase::Holding); std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -94,13 +111,13 @@ void FlightManager::simulateArrival(Aircraft* ac, Runway* rw) {
         ac->isDone = true;
     }
     ac->isDone = true;
-    std::cout << "[STATUS] " << ac->id << " final status: " << toString(ac->phase) << " | Speed: " << ac->speed << " km/h\n\n";
+    cout << "[STATUS] " << ac->id << " final status: " << toString(ac->phase) << " | Speed: " << ac->speed << " km/h\n\n";
 }
 
 void FlightManager::simulateDeparture(Aircraft* ac, Runway* rw) {
 
     SimulationTimer timer; // For time output in events
-    std::cout << "\n[SIMULATION] Flight " << ac->id << " is DEPARTING.\n";
+    cout << "\n[SIMULATION] Flight " << ac->id << " is DEPARTING.\n";
     ac->updatePhase(AircraftPhase::AtGate); std::this_thread::sleep_for(std::chrono::seconds(1));
     ac->updatePhase(AircraftPhase::Taxi); ac->checkGroundFault(); std::this_thread::sleep_for(std::chrono::seconds(1));
     if (ac->hasFault) return;
@@ -111,5 +128,5 @@ void FlightManager::simulateDeparture(Aircraft* ac, Runway* rw) {
     ac->updatePhase(AircraftPhase::Cruise); std::this_thread::sleep_for(std::chrono::seconds(1));
     ac->isDone = true;
     rw->release();
-    std::cout << "[STATUS] " << ac->id << " final status: " << toString(ac->phase) << " | Speed: " << ac->speed << " km/h\n\n";
+    cout << "[STATUS] " << ac->id << " final status: " << toString(ac->phase) << " | Speed: " << ac->speed << " km/h\n\n";
 }

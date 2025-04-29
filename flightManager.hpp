@@ -5,6 +5,7 @@
 #include <chrono>
 #include "aircraft.hpp"
 #include "runway.hpp"
+using namespace std;
 
 struct FlightSchedule {
 
@@ -15,7 +16,7 @@ struct FlightSchedule {
 
 class FlightManager {
 
-public:
+public: 
     void simulate(std::vector<FlightSchedule>& schedules, Runway& rwyA, Runway& rwyB, Runway& rwyC);
     void simulateArrival(Aircraft* ac, Runway* rw);
     void simulateDeparture(Aircraft* ac, Runway* rw);

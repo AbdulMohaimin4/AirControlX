@@ -27,7 +27,7 @@ int main() {
     Runway rwyB(RunwayID::RWY_B, Direction::East);
     Runway rwyC(RunwayID::RWY_C, Direction::None);
 
-    // Initializing all available aircrafts at the start
+    // Initializing all available aircrafts at the start (pre-defined)
     vector<Aircraft*> availableAircrafts = {
 
         new Aircraft("PK001", &PIA),

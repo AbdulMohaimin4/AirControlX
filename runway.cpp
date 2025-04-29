@@ -1,8 +1,14 @@
 // Runway.cpp
 
 #include "runway.hpp"
+#include "aircraft.hpp"
 
-Runway::Runway(RunwayID ID, Direction dir) : id(ID), direction(dir), isAvailable(true), inUseBy(nullptr) {}
+Runway::Runway(RunwayID ID, Direction dir) : id(ID), direction(dir), isAvailable(true), inUseBy(nullptr) {
+
+    pthread_mutex_init(&this->runway_mutex, NULL);
+}
+
+Runway::~Runway() { pthread_mutex_destroy(&this->runway_mutex); }
 
 std::string Runway::getID() {
 
@@ -38,7 +44,7 @@ void Runway::release() {
         this->inUseBy = nullptr;
     }
     this->isAvailable = true;
-    
+
     if (!this->waitQueue.empty()) {
         
         Aircraft* next = this->waitQueue.front();
