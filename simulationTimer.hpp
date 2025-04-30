@@ -8,7 +8,7 @@ class SimulationTimer {
 private:
     std::chrono::system_clock::time_point startTime;
     std::chrono::system_clock::time_point simStartTime;
-    const double SIMULATION_SPEED = 8640.0; // 12 hours in 5 minutes (12*60*60 / 5*60)
+    const double SIMULATION_SPEED = 60.0; // 1 hour in one min
 
 public:
     SimulationTimer();

@@ -4,9 +4,10 @@
 #include <queue>
 #include <string>
 #include <iostream>
-//#include "aircraft.hpp"
+#include "utils.hpp"
 #include "enums.hpp"
 
+// forward declaration to avoid circular dependency
 class Aircraft;
 
 class Runway {
@@ -27,14 +28,5 @@ public:
     void release();
 };
 
-// structure to pass into thread func so the func can decide runway locking itself
-struct RunwayInfo {
-
-    Runway* runway;
-    Runway* runway_C;
-    bool isArrival;
-    int priority;
-
-};
 
 #endif

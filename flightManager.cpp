@@ -5,11 +5,57 @@
 #include <algorithm>
 #include <iomanip>
 #include <ctime>
+#include <vector>
 
 // Comparison function for sorting FlightSchedule objects
 bool compareFlightSchedules(const FlightSchedule& a, const FlightSchedule& b) {
 
-    return a.scheduledTime < b.scheduledTime;
+    if (a.scheduledTime == b.scheduledTime) {
+        // If scheduled times are equal, sort by priority
+        return a.priority > b.priority; 
+    }
+    return a.scheduledTime < b.scheduledTime; // Earlier scheduled time first
+}
+
+Runway* FlightManager::getRunwayForFlight(const FlightSchedule& schedule, Runway& rwyA, Runway& rwyB, Runway& rwyC) {
+
+    // determines which runway to use based on flight type and availability
+    if (schedule.isArrival) {
+
+        return (schedule.aircraft->airline->type == FlightType::Commercial || 
+                schedule.aircraft->airline->type == FlightType::Medical ||
+                schedule.aircraft->airline->type == FlightType::Military) ? &rwyA : &rwyC;
+    } else {
+
+        return (schedule.aircraft->airline->type == FlightType::Commercial || 
+                schedule.aircraft->airline->type == FlightType::Medical ||
+                schedule.aircraft->airline->type == FlightType::Military) ? &rwyB : &rwyC;
+    }
+}
+
+void FlightManager::processFlight(FlightProcessParams* params) {
+
+    RunwayInfo* info = new RunwayInfo;
+    info->isArrival = params->schedule->isArrival;
+    info->priority = params->schedule->aircraft->airline->priority;
+    info->runway = params->runway;
+    info->runway_C = params->runway_C; // incase high priority and A/B are locked
+
+    params->schedule->aircraft->checkRunway(info); // waiting for runway to be free
+    if (params->schedule->isArrival) {
+
+        this->simulateArrival(params->schedule->aircraft, info->runway); // assignment of runway
+    }
+    else {
+
+        this->simulateDeparture(params->schedule->aircraft, info->runway);
+    }
+    pthread_join(params->schedule->aircraft->aircraft_thread, NULL); // joining thread after done
+
+    cout << "[TIME] Real: " << params->timeOutput << "\n";
+
+    delete info;
+    delete params;
 }
 
 void FlightManager::simulate(std::vector<FlightSchedule>& schedules, Runway& rwyA, Runway& rwyB, Runway& rwyC) {
@@ -17,17 +63,12 @@ void FlightManager::simulate(std::vector<FlightSchedule>& schedules, Runway& rwy
     SimulationTimer timer;
     timer.start();
 
-    // Sorting schedules by scheduled time using comparison function
+    // Sorting schedules by scheduled time and priority
     std::sort(schedules.begin(), schedules.end(), compareFlightSchedules);
 
-    for (const auto& schedule : schedules) {
+    std::vector<std::thread> flightThreads;
 
-        // Wait until simulated time reaches scheduled time
-        while (timer.getSimulatedTime() < schedule.scheduledTime) {
-
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        }
-
+    for (auto& schedule : schedules) {
         // Format times for output
         auto realTimeSec = timer.getRealTimeElapsed().count();
         int realMin = realTimeSec / 60;
@@ -40,67 +81,35 @@ void FlightManager::simulate(std::vector<FlightSchedule>& schedules, Runway& rwy
         oss << setfill('0') << setw(2) << realMin << ":" << setw(2) << realSec
             << " | Sim: " << setw(2) << sim_tm->tm_hour << ":" << setw(2) << sim_tm->tm_min << ":" << setw(2) << sim_tm->tm_sec;
 
+        // calling method to assign runway to local pointer
+        Runway* rw = getRunwayForFlight(schedule, rwyA, rwyB, rwyC);
 
-        Runway* rw = nullptr; // points to already instantiated Runway objects in main
+        cout << "[TIME] Real: " << oss.str() << "\n";
 
-        // choosing runway based on whether flight is arrival/departure
-        if (schedule.isArrival) {
+        // Create parameters for flight processing
+        FlightProcessParams* params = new FlightProcessParams;
+        params->schedule = &schedule;
+        params->runway = rw;
+        params->runway_C = &rwyC;
+        params->timeOutput = oss.str();
 
-            // by default RWY-C only accomodates Cargo flights (can be used as backup for multiple high-priority arrivals/departures)
-            rw = (schedule.aircraft->airline->type == FlightType::Commercial || 
-                schedule.aircraft->airline->type == FlightType::Medical ||
-                schedule.aircraft->airline->type == FlightType::Military) ? &rwyA : &rwyC;
+        // Create a thread for each flight using processFlight
+        flightThreads.emplace_back(&FlightManager::processFlight, this, params);
+    }
 
-            cout << "[TIME] Real: " << oss.str() << "\n";
-
-            // using runway info struct to pass info into thread func
-            RunwayInfo* info = new RunwayInfo;
-            info->isArrival = schedule.isArrival;
-            info->priority = schedule.aircraft->airline->priority;
-            info->runway = rw;
-            info->runway_C = &rwyC; // incase high priority and A/B are locked
-
-            schedule.aircraft->checkRunway(info); // waiting for runway to be free
-            simulateArrival(schedule.aircraft, rw); // assignment of runway
-            pthread_join(schedule.aircraft->aircraft_thread, NULL); // joining thread after done
-
-            cout << "[TIME] Real: " << oss.str() << "\n";
-
-        } 
-        else {
-
-            rw = (schedule.aircraft->airline->type == FlightType::Commercial || 
-                schedule.aircraft->airline->type == FlightType::Medical ||
-                schedule.aircraft->airline->type == FlightType::Military) ? &rwyB : &rwyC;
-
-            cout << "[TIME] Real: " << oss.str() << "\n";
-
-            // using runway info struct to pass info into thread func
-            RunwayInfo* info = new RunwayInfo;
-            info->isArrival = schedule.isArrival;
-            info->priority = schedule.aircraft->airline->priority;
-            info->runway = rw;
-            info->runway_C = &rwyC; // incase high priority and A/B are locked
-
-            schedule.aircraft->checkRunway(info); // waiting for runway to be free
-            simulateDeparture(schedule.aircraft, rw); // assignment of runway
-            pthread_join(schedule.aircraft->aircraft_thread, NULL); // joining thread after done
-
-            cout << "[TIME] Real: " << oss.str() << "\n";
-
-        }
+    // Join all flight threads
+    for (auto& thread : flightThreads) {
+        thread.join();
     }
 
     // Continue running until 5 minutes real-time
     while (timer.getRealTimeElapsed() < std::chrono::minutes(5)) {
-
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-        // exiting loop if all scheduled flights are done
-        bool flag = 1;
+        // Exit loop if all scheduled flights are done
+        bool flag = true;
         for (const auto& schedule : schedules) {
-
-            if (!schedule.aircraft->isDone) flag = 0;
+            if (!schedule.aircraft->isDone) flag = false;
         }
         if (flag) break;
     }
@@ -112,14 +121,14 @@ void FlightManager::simulateArrival(Aircraft* ac, Runway* rw) {
     cout << "\n[SIMULATION] Flight " << ac->id << " is ARRIVING.\n";
 
     // sleeping to simulate real time delay (edit later to match animation delay for each phase)
-    ac->updatePhase(AircraftPhase::Holding); std::this_thread::sleep_for(std::chrono::seconds(1));
-    ac->updatePhase(AircraftPhase::Approach); std::this_thread::sleep_for(std::chrono::seconds(1));
-    ac->updatePhase(AircraftPhase::Landing); std::this_thread::sleep_for(std::chrono::seconds(1));
+    ac->updatePhase(AircraftPhase::Holding); std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    ac->updatePhase(AircraftPhase::Approach); std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    ac->updatePhase(AircraftPhase::Landing); std::this_thread::sleep_for(std::chrono::milliseconds(500));
     
     // runway assigned after landing
-    rw->assign(ac); std::this_thread::sleep_for(std::chrono::seconds(1));
+    rw->assign(ac); std::this_thread::sleep_for(std::chrono::milliseconds(500));
     rw->release();
-    ac->updatePhase(AircraftPhase::Taxi); ac->checkGroundFault(); std::this_thread::sleep_for(std::chrono::seconds(1));
+    ac->updatePhase(AircraftPhase::Taxi); ac->checkGroundFault(); std::this_thread::sleep_for(std::chrono::milliseconds(500));
     if (!ac->hasFault) {
 
         ac->updatePhase(AircraftPhase::AtGate);
@@ -133,14 +142,14 @@ void FlightManager::simulateDeparture(Aircraft* ac, Runway* rw) {
 
     SimulationTimer timer; // For time output in events
     cout << "\n[SIMULATION] Flight " << ac->id << " is DEPARTING.\n";
-    ac->updatePhase(AircraftPhase::AtGate); std::this_thread::sleep_for(std::chrono::seconds(1));
-    ac->updatePhase(AircraftPhase::Taxi); ac->checkGroundFault(); std::this_thread::sleep_for(std::chrono::seconds(1));
+    ac->updatePhase(AircraftPhase::AtGate); std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    ac->updatePhase(AircraftPhase::Taxi); ac->checkGroundFault(); std::this_thread::sleep_for(std::chrono::milliseconds(500));
     if (ac->hasFault) return;
 
-    rw->assign(ac); std::this_thread::sleep_for(std::chrono::seconds(1));
-    ac->updatePhase(AircraftPhase::Takeoff); std::this_thread::sleep_for(std::chrono::seconds(1));
-    ac->updatePhase(AircraftPhase::Climb); std::this_thread::sleep_for(std::chrono::seconds(1));
-    ac->updatePhase(AircraftPhase::Cruise); std::this_thread::sleep_for(std::chrono::seconds(1));
+    rw->assign(ac); std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    ac->updatePhase(AircraftPhase::Takeoff); std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    ac->updatePhase(AircraftPhase::Climb); std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    ac->updatePhase(AircraftPhase::Cruise); std::this_thread::sleep_for(std::chrono::milliseconds(500));
     ac->isDone = true;
     rw->release();
     cout << "[STATUS] " << ac->id << " final status: " << toString(ac->phase) << " | Speed: " << ac->speed << " km/h\n\n";

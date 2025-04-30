@@ -131,7 +131,7 @@ int main() {
         local_tm.tm_sec = 0;
         auto scheduledTime = chrono::system_clock::from_time_t(mktime(&local_tm));
 
-        schedules.push_back({availableAircrafts[aircraftIndex - 1], isArrival, scheduledTime}); // pushing aircraft into schedule vector
+        schedules.push_back({availableAircrafts[aircraftIndex - 1], isArrival, scheduledTime, availableAircrafts[aircraftIndex - 1]->airline->priority}); // pushing aircraft into schedule vector
     }
 
     cout << "\n\n\t\t*** Simulation Initializing ***\n\n";

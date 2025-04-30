@@ -12,3 +12,21 @@
 
 [AVN] Violation: PK002 | Phase: Landing | Speed: 25.000000 km/h | Reason: Landing speed not decelerated properly | Time: 00:00 | Sim: 00:00:00
 
+[AVN] Violation: PK001 | Phase: Holding | Speed: 612.000000 km/h | Reason: Speed exceeds 600 (too fast in holding) | Time: 00:00 | Sim: 00:00:00
+
+[AVN] Violation: PK001 | Phase: Landing | Speed: 25.000000 km/h | Reason: Landing speed not decelerated properly | Time: 00:00 | Sim: 00:00:00
+
+[AVN] Violation: PK001 | Phase: At Gate | Speed: 12.000000 km/h | Reason: Gate speed exceeds 10 (should be stationary) | Time: 00:00 | Sim: 00:00:00
+
+[AVN] Violation: PK001 | Phase: Taxi | Speed: 41.000000 km/h | Reason: Taxi speed exceeds 30 | Time: 00:00 | Sim: 00:00:00
+
+[AVN] Violation: PK001 | Phase: Holding | Speed: 617.000000 km/h | Reason: Speed exceeds 600 (too fast in holding) | Time: 00:00 | Sim: 00:00:00
+
+[AVN] Violation: PK001 | Phase: Approach | Speed: 230.000000 km/h | Reason: Approach speed out of range (240–290) | Time: 00:00 | Sim: 00:00:00
+
+[AVN] Violation: PK002 | Phase: Landing | Speed: 260.000000 km/h | Reason: Landing speed not decelerated properly | Time: 00:00 | Sim: 00:00:00
+
+[AVN] Violation: PK002 | Phase: Taxi | Speed: 54.000000 km/h | Reason: Taxi speed exceeds 30 | Time: 00:00 | Sim: 00:00:00
+
+[AVN] Violation: PK001 | Phase: Landing | Speed: 25.000000 km/h | Reason: Landing speed not decelerated properly | Time: 00:00 | Sim: 00:00:00
+

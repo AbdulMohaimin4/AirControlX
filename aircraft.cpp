@@ -19,43 +19,50 @@ static void* thread_fun(void* arg) {
     RunwayInfo* runwayInfo = (RunwayInfo*)arg;
 
     cout << runwayInfo->runway->getID() << "...\n";
-    std::this_thread::sleep_for(std::chrono::seconds(1));
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    // normal/low priority
+    // Normal/low priority
     if (runwayInfo->priority != 4) {
 
         pthread_mutex_lock(&runwayInfo->runway->runway_mutex);
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        runwayInfo->assignedRunway = runwayInfo->runway; // Assign the primary runway
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
         pthread_mutex_unlock(&runwayInfo->runway->runway_mutex);    
     }
-    // top priority: attempt checking RWY-C if A/B not awailable
-    else {
 
+    // Top priority: attempt checking RWY-C if A/B not available
+    else {
         if (pthread_mutex_trylock(&runwayInfo->runway->runway_mutex) == 0) {
 
-            std::this_thread::sleep_for(std::chrono::seconds(1)); // simulating delay
+            runwayInfo->assignedRunway = runwayInfo->runway; // Assign primary runway
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
             pthread_mutex_unlock(&runwayInfo->runway->runway_mutex);
-        }
+        } 
         else {
 
             if (pthread_mutex_trylock(&runwayInfo->runway_C->runway_mutex) == 0) {
 
-                std::this_thread::sleep_for(std::chrono::seconds(1)); // simulating delay
+                runwayInfo->assignedRunway = runwayInfo->runway_C; // Assign Runway C
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
                 pthread_mutex_unlock(&runwayInfo->runway_C->runway_mutex);
+            } 
+            else {
+
+                // If both runways are locked, wait for the primary runway
+                pthread_mutex_lock(&runwayInfo->runway->runway_mutex);
+                runwayInfo->assignedRunway = runwayInfo->runway;
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                pthread_mutex_unlock(&runwayInfo->runway->runway_mutex);
             }
         }
-
     }
-    
 
-
-    runwayInfo->runway->getID() == "RWY-B" ? 
+    runwayInfo->assignedRunway->getID() == "RWY-B" ? 
     cout << "\nAircraft cleared to depart\n" :
-    runwayInfo->runway->getID() == "RWY-A" ? 
+    runwayInfo->assignedRunway->getID() == "RWY-A" ? 
         cout << "\nAircraft cleared to land\n" : 
         cout << "\nRunway C clear to proceed\n";
 
-    delete runwayInfo;
     pthread_exit(NULL);
 }
 
@@ -65,6 +72,8 @@ void Aircraft::checkRunway(RunwayInfo* runwayInfo) {
 
     cout << "\n\n" <<this->airline->name << " flight "<< this->id << " requesting runway ";
     pthread_create(&this->aircraft_thread, NULL, thread_fun, (void*)runwayInfo);
+    pthread_join(this->aircraft_thread, NULL);
+    runwayInfo->runway = runwayInfo->assignedRunway; // Assign the runway to the aircraft
 }
 
 void Aircraft::updatePhase(AircraftPhase newPhase) {
