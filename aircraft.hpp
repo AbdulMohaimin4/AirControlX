@@ -13,7 +13,7 @@ class Aircraft {
     
 public:
     string id;
-    pthread_t aircraft_thread; // aircraft's personal thread
+    pthread_t aircraft_thread; // aircraft's personal thread for mutex management
     Airline* airline;
     AircraftPhase phase;
     double speed;
@@ -23,13 +23,13 @@ public:
     string faultType;
     bool isDone; // sucessfully at gate/cruise
 
-    Aircraft(std::string ID, Airline* al);
+    Aircraft(string ID, Airline* al);
 
     void checkRunway(RunwayInfo* runway); // locks/unlocks/waits for runway mutex
     void updatePhase(AircraftPhase newPhase);
     void assignSpeed();
     void checkForViolation();
-    void triggerAVN(std::string reason);
+    void triggerAVN(string reason);
     void checkGroundFault();
 };
 

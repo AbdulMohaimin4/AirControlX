@@ -1,8 +1,6 @@
-// utils.cpp
-
 #include "utils.hpp"
 
-std::string toString(FlightType type) {
+string toString(FlightType type) {
 
     switch (type) {
         
@@ -14,7 +12,7 @@ std::string toString(FlightType type) {
     return "Unknown";
 }
 
-std::string toString(AircraftPhase phase) {
+string toString(AircraftPhase phase) {
 
     switch (phase) {
 
@@ -30,7 +28,7 @@ std::string toString(AircraftPhase phase) {
     return "Unknown";
 }
 
-std::string toString(AirlineName airline) {
+string toString(AirlineName airline) {
 
     switch (airline) {
 

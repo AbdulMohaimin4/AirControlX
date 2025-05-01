@@ -8,8 +8,10 @@
 #include <thread>
 #include <ctime>
 
-Aircraft::Aircraft(std::string ID, Airline* al)
-    : id(ID), airline(al), phase(AircraftPhase::AtGate), speed(0.0), hasFault(false), avnIssued(false), violationCount(0), faultType(""), isDone(0) {}
+Aircraft::Aircraft(string ID, Airline* al)
+    : id(ID), airline(al), phase(AircraftPhase::AtGate),
+     speed(0.0), hasFault(false), avnIssued(false),
+      violationCount(0), faultType(""), isDone(0) {}
 
 
 // thread function allowing aircraft to lock/unlock runways
@@ -18,15 +20,21 @@ static void* thread_fun(void* arg) {
 
     RunwayInfo* runwayInfo = (RunwayInfo*)arg;
 
+    //pthread_mutex_lock(&cout_mutex);
     cout << runwayInfo->runway->getID() << "...\n";
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    //pthread_mutex_unlock(&cout_mutex);
 
-    // Normal/low priority
+    this_thread::sleep_for(chrono::milliseconds(1000));
+
+    // recording queue start time
+    runwayInfo->queueStartTime = chrono::system_clock::now();
+
+    // Normal/low priority (not priority = 4)
     if (runwayInfo->priority != 4) {
 
         pthread_mutex_lock(&runwayInfo->runway->runway_mutex);
         runwayInfo->assignedRunway = runwayInfo->runway; // Assign the primary runway
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        this_thread::sleep_for(chrono::milliseconds(1000));
         pthread_mutex_unlock(&runwayInfo->runway->runway_mutex);    
     }
 
@@ -35,7 +43,7 @@ static void* thread_fun(void* arg) {
         if (pthread_mutex_trylock(&runwayInfo->runway->runway_mutex) == 0) {
 
             runwayInfo->assignedRunway = runwayInfo->runway; // Assign primary runway
-            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            this_thread::sleep_for(chrono::milliseconds(1000));
             pthread_mutex_unlock(&runwayInfo->runway->runway_mutex);
         } 
         else {
@@ -43,25 +51,23 @@ static void* thread_fun(void* arg) {
             if (pthread_mutex_trylock(&runwayInfo->runway_C->runway_mutex) == 0) {
 
                 runwayInfo->assignedRunway = runwayInfo->runway_C; // Assign Runway C
-                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                this_thread::sleep_for(chrono::milliseconds(1000));
                 pthread_mutex_unlock(&runwayInfo->runway_C->runway_mutex);
             } 
             else {
 
                 // If both runways are locked, wait for the primary runway
-                pthread_mutex_lock(&runwayInfo->runway->runway_mutex);
-                runwayInfo->assignedRunway = runwayInfo->runway;
-                std::this_thread::sleep_for(std::chrono::milliseconds(500));
-                pthread_mutex_unlock(&runwayInfo->runway->runway_mutex);
+                // pthread_mutex_lock(&runwayInfo->runway->runway_mutex);
+                // runwayInfo->assignedRunway = runwayInfo->runway;
+                // this_thread::sleep_for(chrono::milliseconds(1000));
+                // pthread_mutex_unlock(&runwayInfo->runway->runway_mutex);
             }
         }
     }
 
-    runwayInfo->assignedRunway->getID() == "RWY-B" ? 
-    cout << "\nAircraft cleared to depart\n" :
-    runwayInfo->assignedRunway->getID() == "RWY-A" ? 
-        cout << "\nAircraft cleared to land\n" : 
-        cout << "\nRunway C clear to proceed\n";
+    // thread safe outputting
+    cout << "\nAircraft cleared to " << (runwayInfo->assignedRunway->getID() == "RWY-B" ? "depart" :
+        runwayInfo->assignedRunway->getID() == "RWY-A" ? "land" : "proceed on Runway C") << "\n";
 
     pthread_exit(NULL);
 }
@@ -71,9 +77,11 @@ static void* thread_fun(void* arg) {
 void Aircraft::checkRunway(RunwayInfo* runwayInfo) {
 
     cout << "\n\n" <<this->airline->name << " flight "<< this->id << " requesting runway ";
+
     pthread_create(&this->aircraft_thread, NULL, thread_fun, (void*)runwayInfo);
     pthread_join(this->aircraft_thread, NULL);
-    runwayInfo->runway = runwayInfo->assignedRunway; // Assign the runway to the aircraft
+
+    runwayInfo->runway = runwayInfo->assignedRunway; // assigning locked runway to aircraft
 }
 
 void Aircraft::updatePhase(AircraftPhase newPhase) {
@@ -81,6 +89,9 @@ void Aircraft::updatePhase(AircraftPhase newPhase) {
     phase = newPhase;
     this->assignSpeed();
     this->checkForViolation();
+
+    // Thread safe status update
+    cout << "[STATUS] " << id << " updated to " << toString(phase) << " | Speed: " << speed << " km/h\n";
 }
 
 void Aircraft::assignSpeed() {
@@ -132,7 +143,7 @@ void Aircraft::checkForViolation() {
     }
 }
 
-void Aircraft::triggerAVN(std::string reason) {
+void Aircraft::triggerAVN(string reason) {
 
     SimulationTimer timer;
 
@@ -141,26 +152,28 @@ void Aircraft::triggerAVN(std::string reason) {
     int realMin = realTimeSec / 60;
     int realSec = realTimeSec % 60;
     auto simTime = timer.getSimulatedTime();
-    time_t simTime_t = std::chrono::system_clock::to_time_t(simTime);
+    time_t simTime_t = chrono::system_clock::to_time_t(simTime);
     tm* sim_tm = localtime(&simTime_t);
 
-    std::ostringstream oss; // to store time information for logging
-    oss << std::setfill('0') << std::setw(2) << realMin << ":" << std::setw(2) << realSec
-        << " | Sim: " << std::setw(2) << sim_tm->tm_hour << ":" << std::setw(2) << sim_tm->tm_min << ":" << std::setw(2) << sim_tm->tm_sec;
+    ostringstream oss; // to store time information for logging
+    oss << setfill('0') << setw(2) << realMin << ":" << setw(2) << realSec
+        << " | Sim: " << setw(2) << sim_tm->tm_hour << ":" << setw(2) << sim_tm->tm_min << ":" << setw(2) << sim_tm->tm_sec;
 
-    const std::string violation = "[AVN] Violation: " + id + " | Phase: " + toString(phase) + " | Speed: " + std::to_string(speed) + " km/h | Reason: " + reason + " | Time: " + oss.str() + "\n";
+    const string violation = "[AVN] Violation: " + id + " | Phase: " + toString(phase) + " | Speed: " + to_string(speed) + " km/h | Reason: " + reason + " | Time: " + oss.str() + "\n";
     this->airline->logViolation(violation);
     AVNLog::issueAVN(id, reason, speed, phase, oss.str());
     avnIssued = true;
-    violationCount++;
+    violationCount++; // for later usage
 }
 
 void Aircraft::checkGroundFault() {
 
-    if ((phase == AircraftPhase::AtGate || phase == AircraftPhase::Taxi) && (rand() % 100 < 15)) {
+    // 15% chance of fault during taxi or at gate
+    if ((this->phase == AircraftPhase::AtGate || this->phase == AircraftPhase::Taxi) && (rand() % 100 < 15)) {
 
-        hasFault = true;
-        faultType = (rand() % 2 == 0) ? "Brake Failure" : "Hydraulic Leak";
-        std::cout << "[FAULT] " << id << " encountered: " << faultType << "\n";
+        this->hasFault = true;
+        this->faultType = (rand() % 2 == 0) ? "Brake Failure" : "Hydraulic Leak"; // example options
+        
+        cout << "[FAULT] " << id << " encountered: " << this->faultType << "\n";
     }
 }

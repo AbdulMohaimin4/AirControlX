@@ -1,16 +1,14 @@
-// Airline.cpp
-
 #include "airline.hpp"
 #include "utils.hpp"
 
-Airline::Airline(std::string n, FlightType t, int total, int active)
+Airline::Airline(string n, FlightType t, int total, int active)
     : name(n), type(t), aircraftCount(total), activeFlights(active) {
 
         this->fileName = n + "_logFile";
-        this->logFile.open(this->fileName, std::ios::app); // opening in append mode
+        this->logFile.open(this->fileName, ios::app); // opening in append mode
 
         if (!this->logFile.is_open()) 
-            std::cout << "Error: could not create/open file '" << this->fileName << "'\n";
+            cout << "Error: could not create/open file '" << this->fileName << "'\n";
 
         switch (this->type) {
 
@@ -21,7 +19,7 @@ Airline::Airline(std::string n, FlightType t, int total, int active)
                 this->priority = 1;
                 break;
             case FlightType::Medical:
-                this->priority = 4;     // priority = 4 is maximum (emergency) and can be set for other flights allowing usage of RWY-C
+                this->priority = 4;     // priority = 4 is maximum (emergency) and can be set for other flights allowing priviledged usage of RWY-C
                 break;
             case FlightType::Military:
                 this->priority = 3;
@@ -35,8 +33,8 @@ Airline::~Airline() {
     if (this->logFile.is_open()) this->logFile.close();
 }
 
-void Airline::logViolation(const std::string& message) {
+void Airline::logViolation(const string& message) {
 
     if (this->logFile.is_open()) this->logFile << message << "\n";
-    else std::cout << "Error: Log file not open\n";
+    else cout << "Error: Log file not open\n";
 }

@@ -12,8 +12,9 @@ struct FlightSchedule {
 
     Aircraft* aircraft;
     bool isArrival;
-    std::chrono::system_clock::time_point scheduledTime;
+    chrono::system_clock::time_point scheduledTime;
     int priority;
+    int waitTimeSeconds; // for storing wait time
 };
 
 struct FlightProcessParams {
@@ -22,15 +23,14 @@ struct FlightProcessParams {
     Runway* runway;
     Runway* runway_C;
     string timeOutput;
-    Aircraft* aircraft; // aircraft attempting to use the runway
 };
 
 class FlightManager {
 
 public: 
     void simulate(std::vector<FlightSchedule>& schedules, Runway& rwyA, Runway& rwyB, Runway& rwyC);
-    void simulateArrival(Aircraft* ac, Runway* rw);
-    void simulateDeparture(Aircraft* ac, Runway* rw);
+    void simulateArrival(Aircraft* ac, Runway* rw, int waitTimeSeconds);
+    void simulateDeparture(Aircraft* ac, Runway* rw, int waitTimeSeconds);
     Runway* getRunwayForFlight(const FlightSchedule& schedule, Runway& rwyA, Runway& rwyB, Runway& rwyC);
     void processFlight(FlightProcessParams* params);
 };

@@ -6,11 +6,16 @@
 Runway::Runway(RunwayID ID, Direction dir) : id(ID), direction(dir), isAvailable(true), inUseBy(nullptr) {
 
     pthread_mutex_init(&this->runway_mutex, NULL);
+    pthread_mutex_init(&this->queue_mutex, NULL);
 }
 
-Runway::~Runway() { pthread_mutex_destroy(&this->runway_mutex); }
+Runway::~Runway() { 
 
-std::string Runway::getID() {
+    pthread_mutex_destroy(&this->runway_mutex); 
+    pthread_mutex_destroy(&this->queue_mutex);
+}
+
+string Runway::getID() {
 
     switch (id) {
 
@@ -21,34 +26,56 @@ std::string Runway::getID() {
     return "Unknown";
 }
 
-void Runway::assign(Aircraft* ac) {
+void Runway::assign(Aircraft* ac, chrono::system_clock::time_point queueStartTime, int& waitTimeSeconds) {
 
+    auto now = chrono::system_clock::now(); // starting timer at assignment (now)
+    // calculating the time it took since aircraft's enquque till assignment (delay) | stored in inputted ref var
+    waitTimeSeconds = chrono::duration_cast<chrono::seconds>(now - queueStartTime).count();
+
+    // locking queue 
+    pthread_mutex_lock(&this->queue_mutex);
     if (this->isAvailable) {
 
         this->inUseBy = ac;
         this->isAvailable = false;
-        std::cout << "[RUNWAY] " << ac->id << " assigned to " << getID() << "\n";
+        //pthread_mutex_lock(&cout_mutex);
+        cout << "[RUNWAY] " << ac->id << " assigned to " << getID() << " after waiting "
+        << waitTimeSeconds << " seconds\n";
+        //pthread_mutex_unlock(&cout_mutex);
     } 
     else {
 
-        this->waitQueue.push(ac);
-        std::cout << "[QUEUE] " << ac->id << " added to " << getID() << " queue.\n";
+        // initializing and passing 'AircraftQueueEntry' struct to queue simultaeneously
+        this->waitQueue.push({ac, ac->airline->priority, now}); 
+        //pthread_mutex_lock(&cout_mutex);
+        cout << "[QUEUE] " << ac->id << " added to " << this->getID() << " queue.\n";
+        //pthread_mutex_unlock(&cout_mutex);
     }
+    pthread_mutex_unlock(&this->queue_mutex); // unlocked for other aircrafts to be enqueued
 }
 
 void Runway::release() {
 
+    pthread_mutex_lock(&this->queue_mutex);
+
     if (this->inUseBy != nullptr) {
 
-        std::cout << "[RUNWAY] " << this->inUseBy->id << " cleared from " << getID() << "\n";
+        //pthread_mutex_lock(&cout_mutex);
+        cout << "[RUNWAY] " << this->inUseBy->id << " cleared from runway" << this->getID() << "\n";
+        //pthread_mutex_unlock(&cout_mutex);
         this->inUseBy = nullptr;
     }
     this->isAvailable = true;
 
-    if (!this->waitQueue.empty()) {
+    if ( !(this->waitQueue.empty()) ) {
         
-        Aircraft* next = this->waitQueue.front();
+        AircraftQueueEntry next = this->waitQueue.top();
         this->waitQueue.pop();
-        assign(next);
+
+        pthread_mutex_unlock(&this->queue_mutex);
+        int waitTimeSeconds = 0; // this will be sent by refrence to assign method so that it can be used as output
+        this->assign(next.aircraft, next.entryTime, waitTimeSeconds);
     }
+    else 
+        pthread_mutex_unlock(&this->queue_mutex);
 }
