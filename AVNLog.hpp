@@ -7,7 +7,7 @@ using namespace std;
 
 class AVNLog {
 public:
-    static void issueAVN(string aircraftID, string reason, double speed, AircraftPhase phase, string timeStr);
+    static void issueAVN(string aircraftID, string reason, double speed, AircraftPhase phase);
 };
 
 #endif

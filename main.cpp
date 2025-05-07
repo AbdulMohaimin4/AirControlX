@@ -4,10 +4,12 @@
 #include <vector>
 #include <string>
 #include <chrono>
+#include <iomanip>
 #include "airline.hpp"
 #include "runway.hpp"
 #include "aircraft.hpp"
 #include "flightManager.hpp"
+#include "simulation.hpp"
 using namespace std;
 
 int main() {
@@ -46,11 +48,16 @@ int main() {
         new Aircraft("AKA01", &AghaKhan_Air_Ambulance)
     };
 
+    /*
+        Primary initializations 
+    */
 
 
-
+    
     FlightManager manager;
     vector<FlightSchedule> schedules;
+
+
 
 
 
@@ -110,29 +117,45 @@ int main() {
         isArrival = (input == 1); // to make sure 1 or 0 (error handling)
 
         string timeInput;
-        cout << "Enter scheduled time (HH:MM, 24-hour format, e.g., 14:30): ";
+        cout << "Enter scheduled time (MM:SS format, within 5 minutes, e.g., 03:30): ";
         cin >> timeInput;
 
         // Parsing time input and handling error using 'sscanf'
-        int hours, minutes;
-        if (sscanf(timeInput.c_str(), "%d:%d", &hours, &minutes) != 2 || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+        int minutes, seconds;
+        if (sscanf(timeInput.c_str(), "%d:%d", &minutes, &seconds) != 2 || 
+            minutes < 0 || minutes >= 5 || seconds < 0 || seconds > 59 ||
+            (minutes == 5 && seconds > 0)) {
 
-            cout << "Error: Invalid time format. Use HH:MM (24-hour).\n";
+            cout << "Error: Invalid time format. Use MM:SS (within 5 minutes).\n";
             --i;
             continue;
         }
 
-        // Creating a time_point for scheduled time (assuming today's date) beyond my understanding
-        auto now = chrono::system_clock::now();
-        time_t now_c = chrono::system_clock::to_time_t(now);
-        tm local_tm = *localtime(&now_c);
-        local_tm.tm_hour = hours;
-        local_tm.tm_min = minutes;
-        local_tm.tm_sec = 0;
-        auto scheduledTime = chrono::system_clock::from_time_t(mktime(&local_tm));
+       // Creating a time_point for scheduled time (starting from midnight)
+       auto now = chrono::system_clock::now();
+       time_t now_c = chrono::system_clock::to_time_t(now);
+       tm local_tm = *localtime(&now_c);
+       
+       // Set to midnight (00:00:00) plus the scheduled minutes and seconds
+       local_tm.tm_hour = 0;
+       local_tm.tm_min = minutes;
+       local_tm.tm_sec = seconds;
+       auto scheduledTime = chrono::system_clock::from_time_t(mktime(&local_tm));
+
+       // cout << "Hours: " << hours << ". Minutes " << minutes << "\n";
 
         schedules.push_back({availableAircrafts[aircraftIndex - 1], isArrival, scheduledTime, availableAircrafts[aircraftIndex - 1]->airline->priority}); // pushing aircraft into schedule vector
     }
+
+    /*
+    for (const auto& schedule : schedules) {
+
+        time_t scheduled_c = chrono::system_clock::to_time_t(schedule.scheduledTime);
+
+        // Print in human-readable format
+        cout << "Scheduled time: " << put_time(localtime(&scheduled_c), "%Y-%m-%d %H:%M:%S") << endl;
+    }
+    */
 
     cout << "\n\n\t\t*** Simulation Initializing ***\n\n";
 

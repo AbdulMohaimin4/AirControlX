@@ -20,6 +20,8 @@ struct RunwayInfo {
     int priority;
     Runway* assignedRunway; // Store the runway actually used
     chrono::system_clock::time_point queueStartTime; // to track when aircraft is enqueued
+    Aircraft* aircraft;
+    int waitTimeSeconds;
 };
 
 

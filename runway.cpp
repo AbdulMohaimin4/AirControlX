@@ -38,18 +38,14 @@ void Runway::assign(Aircraft* ac, chrono::system_clock::time_point queueStartTim
 
         this->inUseBy = ac;
         this->isAvailable = false;
-        //pthread_mutex_lock(&cout_mutex);
         cout << "[RUNWAY] " << ac->id << " assigned to " << getID() << " after waiting "
         << waitTimeSeconds << " seconds\n";
-        //pthread_mutex_unlock(&cout_mutex);
     } 
     else {
 
         // initializing and passing 'AircraftQueueEntry' struct to queue simultaeneously
         this->waitQueue.push({ac, ac->airline->priority, now}); 
-        //pthread_mutex_lock(&cout_mutex);
         cout << "[QUEUE] " << ac->id << " added to " << this->getID() << " queue.\n";
-        //pthread_mutex_unlock(&cout_mutex);
     }
     pthread_mutex_unlock(&this->queue_mutex); // unlocked for other aircrafts to be enqueued
 }
@@ -60,9 +56,7 @@ void Runway::release() {
 
     if (this->inUseBy != nullptr) {
 
-        //pthread_mutex_lock(&cout_mutex);
         cout << "[RUNWAY] " << this->inUseBy->id << " cleared from runway" << this->getID() << "\n";
-        //pthread_mutex_unlock(&cout_mutex);
         this->inUseBy = nullptr;
     }
     this->isAvailable = true;

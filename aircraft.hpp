@@ -20,12 +20,14 @@ public:
     bool hasFault;
     bool avnIssued;
     int violationCount;
+    bool violationStatus; // module 3
     string faultType;
     bool isDone; // sucessfully at gate/cruise
+    int waitTimeSeconds; // for storing wait time
 
     Aircraft(string ID, Airline* al);
 
-    void checkRunway(RunwayInfo* runway); // locks/unlocks/waits for runway mutex
+    //void checkRunway(RunwayInfo* runway); // locks/unlocks/waits for runway mutex
     void updatePhase(AircraftPhase newPhase);
     void assignSpeed();
     void checkForViolation();
