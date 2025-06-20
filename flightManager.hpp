@@ -1,11 +1,13 @@
 #ifndef FLIGHTMANAGER_HPP
 #define FLIGHTMANAGER_HPP
 
+#include <iostream>
 #include <vector>
 #include <chrono>
 #include "aircraft.hpp"
 #include "runway.hpp"
 #include "utils.hpp"
+#include "atcController.hpp"
 using namespace std;
 
 struct FlightSchedule {
@@ -27,13 +29,22 @@ struct FlightProcessParams {
 
 class FlightManager {
 
+private:
+    ATCController* atc;
+
 public: 
+    FlightManager() : atc(new ATCController()) {}
+    ~FlightManager() { delete atc; }
     void simulate(std::vector<FlightSchedule>& schedules, Runway& rwyA, Runway& rwyB, Runway& rwyC);
     //void simulateArrival(Aircraft* ac, Runway* rw, int waitTimeSeconds);
     //void simulateDeparture(Aircraft* ac, Runway* rw, int waitTimeSeconds);
     Runway* getRunwayForFlight(const FlightSchedule& schedule, Runway& rwyA, Runway& rwyB, Runway& rwyC);
     void processFlight(FlightProcessParams* params);
     void checkRunway(RunwayInfo* runway);
+
+    void monitorFlight(Aircraft* aircraft) {
+        atc->monitorAircraft(aircraft->id, aircraft->getCurrentSpeed(), aircraft->getCurrentAltitude());
+    }
 };
 
 #endif

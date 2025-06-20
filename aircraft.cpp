@@ -12,6 +12,7 @@ Aircraft::Aircraft(string ID, Airline* al)
       speed(0.0), hasFault(false), avnIssued(false),
       violationCount(0), violationStatus(false), faultType(""), isDone(0) {}
 
+// update method the set new phase for arrival/departure and check violations
 void Aircraft::updatePhase(AircraftPhase newPhase) {
 
     phase = newPhase;
@@ -19,6 +20,7 @@ void Aircraft::updatePhase(AircraftPhase newPhase) {
     this->checkForViolation();
     cout << "[STATUS] " << this->id << " updated to " << toString(phase) << " | Speed: " << this->speed << " km/h\n";
 }
+
 
 void Aircraft::assignSpeed() {
 
@@ -72,18 +74,32 @@ void Aircraft::triggerAVN(string reason) {
 
     if (!this->violationStatus) this->violationStatus = true;
 
-    auto now = chrono::steady_clock::now();
-    auto elapsed = chrono::duration_cast<chrono::seconds>(now - chrono::steady_clock::now()).count();
-    int realMin = elapsed / 60;
-    int realSec = elapsed % 60;
-    ostringstream oss;
-    oss << setfill('0') << setw(2) << realMin << ":" << setw(2) << realSec;
-    const string violation = "[AVN] Violation: " + id + " | Phase: " + toString(phase) + " | Speed: " + to_string(speed) + " km/h | Reason: " + reason + " | Time: " + oss.str() + "\n";
+    auto now = chrono::system_clock::now();
+    time_t now_t = chrono::system_clock::to_time_t(now);
+
+    // Create AVN record
+    AVNRecord avn;
+    avn.avn_id = "AVN" + to_string(violationCount + 1);
+    avn.airline_name = airline->getName();
+    avn.aircraft_id = id;
+    avn.aircraft_type = airline->getType();
+    avn.recorded_speed = speed;
+    avn.issue_date = now_t;
+    avn.due_date = now_t + (3 * 24 * 60 * 60); // due date 3 days from now
+
+    if (airline->getType() == FlightType::Commercial) avn.fine_amount = 500000.0;
+    else avn.fine_amount = 700000.0;
+    avn.service_fee = avn.fine_amount * 0.15;
+    avn.paid = false;
+
+    // Log the violation through airline
+    this->airline->logViolation(avn);
+
+    // Also log to AVN system
+    AVNLog::issueAVN(this->id, reason, this->speed, this->phase);
     
-    this->airline->logViolation(violation);
-    AVNLog::issueAVN(id, reason, speed, phase);
-    avnIssued = true;
-    violationCount++;
+    this->avnIssued = true;
+    this->violationCount++;
 }
 
 void Aircraft::checkGroundFault() {
@@ -92,5 +108,19 @@ void Aircraft::checkGroundFault() {
         this->hasFault = true;
         this->faultType = (rand() % 2 == 0) ? "Brake Failure" : "Hydraulic Leak";
         cout << "[FAULT] " << id << " encountered: " << this->faultType << "\n";
+    }
+}
+
+void Aircraft::updateFlightParameters(double speed, double altitude) {
+    
+    current_speed = speed;
+    current_altitude = altitude;
+    
+    // Random speed/altitude variations for simulation
+    if (rand() % 100 < 10) {  // 10% chance of speed violation
+        current_speed += 100 + (rand() % 200);
+    }
+    if (rand() % 100 < 5) {   // 5% chance of altitude violation
+        current_altitude += 1000 + (rand() % 2000);
     }
 }

@@ -27,6 +27,6 @@ struct RunwayInfo {
 
 string toString(FlightType type);
 string toString(AircraftPhase phase);
-
+string toString(AirlineName airline);
 
 #endif

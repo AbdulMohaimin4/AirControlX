@@ -1,40 +1,49 @@
 #include "airline.hpp"
-#include "utils.hpp"
+#include "avnGenerator.hpp"
+#include <sstream>
+#include <iomanip>
 
-Airline::Airline(string n, FlightType t, int total, int active)
-    : name(n), type(t), aircraftCount(total), activeFlights(active) {
+Airline::Airline(const std::string& name, FlightType type, int total, int available)
+    : name(name), type(type), availableFlights(available), totalFlights(total) {
+    priority = (type == FlightType::Medical) ? 4 :
+               (type == FlightType::Military) ? 3 :
+               (type == FlightType::Commercial) ? 2 : 1;
 
-        this->fileName = n + "_logFile";
-        this->logFile.open(this->fileName, ios::app); // opening in append mode
+    log_file.open(name + "_avns.log", std::ios::app);
+    if (!log_file.is_open()) {
 
-        if (!this->logFile.is_open()) 
-            cout << "Error: could not create/open file '" << this->fileName << "'\n";
-
-        switch (this->type) {
-
-            case FlightType::Cargo:
-                this->priority = 2;
-                break;
-            case FlightType::Commercial:
-                this->priority = 1;
-                break;
-            case FlightType::Medical:
-                this->priority = 4;     // priority = 4 is maximum (emergency) and can be set for other flights allowing priviledged usage of RWY-C
-                break;
-            case FlightType::Military:
-                this->priority = 3;
-                break;
-        }
-
+        std::cerr << "Error: Could not open " << name << "_avns.log for writing\n";
     }
+}
 
 Airline::~Airline() {
 
-    if (this->logFile.is_open()) this->logFile.close();
+    if (log_file.is_open()) {
+
+        log_file.close();
+    }
 }
 
-void Airline::logViolation(const string& message) {
+void Airline::logViolation(const AVNRecord& avn) {
+    
+    if (log_file.is_open()) {
 
-    if (this->logFile.is_open()) this->logFile << message << "\n";
-    else cout << "Error: Log file not open\n";
+        std::stringstream ss;
+        ss << avn.avn_id << "|"
+           << avn.airline_name << "|"
+           << avn.aircraft_id << "|"
+           << static_cast<int>(avn.aircraft_type) << "|"
+           << avn.recorded_speed << "|"
+           << avn.issue_date << "|"
+           << avn.fine_amount << "|"
+           << avn.service_fee << "|"
+           << (avn.paid ? "1" : "0") << "|"
+           << avn.due_date;
+        log_file << ss.str() << "\n";
+        log_file.flush();
+    } 
+    else {
+        
+        std::cerr << "Error: " << name << "_avns.log not open for writing\n";
+    }
 }

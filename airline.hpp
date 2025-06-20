@@ -7,23 +7,28 @@
 #include "enums.hpp"
 using namespace std;
 
+struct AVNRecord;
+
 class Airline {
-
 private:
-    string fileName; // log file name
-    ofstream logFile; // file stream for entering logs/bills
-public:
-    string name;
-    FlightType type;
-    int priority; // higher priority = higher value (for max-heap implementation)
-    int aircraftCount;
-    int activeFlights;
-
-    Airline(string n, FlightType t, int total, int active);
-    ~Airline();
     
-    // logging Airspace Violation Notice (AVN) bills
-    void logViolation(const string& message);
+
+public:
+    Airline(const string& name, FlightType type, int total, int available);
+    ~Airline();
+
+    string name;
+    int priority;
+    int availableFlights;
+    int totalFlights;
+    ofstream log_file;
+    FlightType type;
+
+    void logViolation(const AVNRecord& avn);
+    string getName() const { return name; }
+    FlightType getType() const { return type; }
+    int getPriority() const { return priority; }
+
 };
 
 #endif
